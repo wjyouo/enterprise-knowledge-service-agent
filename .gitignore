@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.env
+*.db
+.venv/
+venv/
+enterprisenv/
+*.egg-info/
+.pytest_cache/
+dist/
+build/
+trial.ipynb
+roadmap.md
