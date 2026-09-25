@@ -16,7 +16,6 @@ import os
 
 import httpx
 import streamlit as st
-import streamlit.components.v1 as components
 
 
 TEXT = {
@@ -82,106 +81,10 @@ TEXT = {
     },
 }
 
-SHELL_TEXT_PAIRS = {
-    "System": "跟随系统",
-    "Light": "浅色",
-    "Dark": "深色",
-    "Rerun": "重新运行",
-    "Auto rerun": "自动重新运行",
-    "Clear cache": "清除缓存",
-    "Print": "打印",
-    "Record screen": "录制屏幕",
-    "Made with Streamlit v1.64.0": "由 Streamlit 构建 v1.64.0",
-    "Deploy this app using...": "使用以下方式部署此应用...",
-    "Streamlit Community Cloud": "Streamlit 社区云",
-    "Snowflake": "Snowflake",
-    "Other platforms": "其他平台",
-    "For community, always free": "面向社区，永久免费",
-    "For enterprise": "面向企业",
-    "For custom deployment": "用于自定义部署",
-    "For personal hobbies and learning": "适合个人兴趣和学习",
-    "Deploy unlimited public apps": "部署不限数量的公开应用",
-    "Explore and learn from Streamlit’s community and popular apps": "探索并学习 Streamlit 社区和热门应用",
-    "Enterprise-level security, support, and fully managed infrastructure": "企业级安全、支持和全托管基础设施",
-    "Deploy unlimited private apps with role-based sharing": "部署不限数量的私有应用，并支持按角色共享",
-    "Integrate with Snowflake’s full data stack": "集成 Snowflake 完整数据栈",
-    "Deploy on your own hardware or cloud service": "部署到你自己的硬件或云服务",
-    "Set up and maintain your own authentication, resources, and costs": "自行设置和维护认证、资源与成本",
-    "Deploy now": "立即部署",
-    "Start trial": "开始试用",
-    "Learn more": "了解更多",
-    "Drag and drop files here": "将文件拖放到这里",
-    "Browse files": "选择文件",
-    "Limit 200MB per file": "单个文件上限 200MB",
-    "Accepted file types: PDF": "支持的文件类型：PDF",
-    "No file chosen": "未选择文件",
-}
-
-
 def t(key: str, **kwargs) -> str:
     lang = st.session_state.get("language", "zh")
     value = TEXT[lang][key]
     return value.format(**kwargs) if kwargs else value
-
-
-def inject_streamlit_shell_translator(language: str) -> None:
-    if language == "zh":
-        replacements = SHELL_TEXT_PAIRS
-    else:
-        replacements = {value: key for key, value in SHELL_TEXT_PAIRS.items()}
-
-    script = f"""
-    <script>
-    (() => {{
-      const replacements = {json.dumps(replacements, ensure_ascii=False)};
-      const normalize = (text) => text.replace(/\\s+/g, " ").trim();
-      const translateTextNode = (node) => {{
-        const raw = node.nodeValue || "";
-        const trimmed = normalize(raw);
-        if (!trimmed || !replacements[trimmed]) return;
-
-        const leading = raw.match(/^\\s*/)[0];
-        const trailing = raw.match(/\\s*$/)[0];
-        node.nodeValue = `${{leading}}${{replacements[trimmed]}}${{trailing}}`;
-      }};
-      const translateElementAttributes = (element) => {{
-        for (const attr of ["aria-label", "title", "placeholder"]) {{
-          const current = element.getAttribute?.(attr);
-          if (!current) continue;
-          const trimmed = normalize(current);
-          if (replacements[trimmed]) element.setAttribute(attr, replacements[trimmed]);
-        }}
-      }};
-      const translate = () => {{
-        const doc = window.parent?.document;
-        if (!doc) return;
-
-        const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT);
-        const nodes = [];
-        while (walker.nextNode()) nodes.push(walker.currentNode);
-        nodes.forEach(translateTextNode);
-        doc.querySelectorAll("[aria-label], [title], [placeholder]").forEach(translateElementAttributes);
-      }};
-
-      const doc = window.parent?.document;
-      if (!doc) return;
-      if (window.parent.__streamlitShellTranslatorObserver) {{
-        window.parent.__streamlitShellTranslatorObserver.disconnect();
-      }}
-
-      translate();
-      window.parent.__streamlitShellTranslatorObserver = new MutationObserver(() => translate());
-      window.parent.__streamlitShellTranslatorObserver.observe(doc.body, {{
-        childList: true,
-        subtree: true,
-        characterData: true,
-        attributes: true,
-        attributeFilter: ["aria-label", "title", "placeholder"],
-      }});
-    }})();
-    </script>
-    """
-    components.html(script, height=0, width=0)
 
 
 def _iter_sse_events(response: httpx.Response):
@@ -231,8 +134,6 @@ if "messages" not in st.session_state:
     st.session_state.messages = []  # [{"role", "content", "sources", "verification"}]
 if "language" not in st.session_state:
     st.session_state.language = "zh"
-
-inject_streamlit_shell_translator(st.session_state.language)
 
 
 def load_threads():
